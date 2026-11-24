@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — which pre-token protocol is worth farming next</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">◎</span>
+    <div>
+      <h1>Token Radar</h1>
+      <p class="tagline">Pre-token protocols, ranked by the implied value of a launch — and how to farm each one.</p>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-view="board" role="tab">Board</button>
+  <button class="tab" data-view="live" role="tab">Live tokens</button>
+  <button class="tab" data-view="model" role="tab">How the model works</button>
+</nav>
+
+<section id="view-board" class="view">
+  <div class="scope" role="group" aria-label="Board scope">
+    <button class="pill active" data-scope="all">All</button>
+    <button class="pill" data-scope="watchlist">Watchlist</button>
+    <button class="pill" data-scope="top40">Top 40</button>
+    <button class="pill" data-scope="early">Early radar</button>
+    <button class="pill" data-scope="deployments">Deployments</button>
+  </div>
+  <div class="toolbar">
+    <label class="search">Search
+      <input id="q" type="search" placeholder="Protocol name or slug…" autocomplete="off">
+    </label>
+    <label>Category
+      <select id="cat"><option value="">All categories</option></select>
+    </label>
+    <label>Chain
+      <select id="chain"><option value="">All chains</option></select>
+    </label>
+    <label class="check"><input id="wl" type="checkbox"> Watchlist only</label>
+    <label>Sort
+      <select id="sort">
+        <option value="rank">Rank</option>
+        <option value="implied">Implied value</option>
+        <option value="tvl">TVL</option>
+        <option value="chg">7-day change</option>
+        <option value="age">Age</option>
+        <option value="name">Name</option>
+        <option value="cat">Category</option>
+      </select>
+    </label>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="tablewrap">
+    <table id="board">
+      <thead>
+        <tr>
+          <th data-k="rank" class="num sortable">#</th>
+          <th data-k="name" class="sortable">Protocol</th>
+          <th data-k="cat" class="sortable">Category</th>
+          <th data-k="chains">Chains</th>
+          <th data-k="tvl" class="num sortable">TVL</th>
+          <th data-k="chg" class="num sortable">7d</th>
+          <th data-k="age" class="num sortable">Age</th>
+          <th data-k="implied" class="num sortable">Implied value</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <p class="hint">Click any row for its eleven-factor value breakdown and farm plan. Click a column
+  heading to sort by it. Implied values are this radar's own model, not a promise — a protocol
+  "records no token" in the snapshot; the record is not proof it has none. Never pay a fee to
+  claim anything, and never connect a wallet from a link in a direct message.</p>
+</section>
+
+<section id="view-live" class="view" hidden>
+  <p class="intro">These protocols already have a token trading, so the market — not the model — sets
+  their value. They are shown apart from the ranking, and their market-cap / TVL ratios are what
+  price the board's category multiples.</p>
+  <div class="tablewrap">
+    <table id="livetab">
+      <thead>
+        <tr><th>Protocol</th><th>Category</th><th>Chains</th><th class="num">TVL</th><th class="num">Market cap</th><th class="num">Mcap / TVL</th><th class="num">7d</th></tr>
+      </thead>
+      <tbody id="liverows"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="view-model" class="view" hidden>
+  <h2>radar-5: the value model</h2>
+  <p>Every row's implied value is built from the snapshot's own figures — nothing is hand-picked
+  per protocol, and no protocol name is ever special-cased. The week the snapshot was taken was a
+  down week (median 7-day change <strong id="medchg"></strong>), so holding up then counts, and a
+  wild week in either direction counts against a protocol.</p>
+  <pre class="formula">implied = round(TVL × multiple × momentum × relative × sector × stability × age × velocity × scale × breadth × chain × focus × deployment)</pre>
+  <table class="factors">
+    <thead><tr><th>Factor</th><th>What it is</th><th>Range</th></tr></thead>
+    <tbody id="factrows"></tbody>
+  </table>
+  <h3>Where the category multiple comes from</h3>
+  <p>For each category, the median market-cap / TVL ratio of the snapshot's live-token protocols in
+  that category, shrunk toward the global median by sample size: weight n / (n + 6), so a category
+  with twenty live protocols mostly sets its own price and one with three mostly takes the global
+  median; categories with fewer than three live protocols take the global median outright, and
+  every live ratio is winsorized into the 0.08–0.60 band before the median, so one outlier never
+  sets a price. The global median across live-token protocols is
+  <strong id="gmult"></strong>.</p>
+  <h3>Category multiples in this snapshot</h3>
+  <div class="tablewrap"><table class="factors">
+    <thead><tr><th>Category</th><th class="num">Multiple</th><th class="num">Live protocols</th><th class="num">Live median 7d</th></tr></thead>
+    <tbody id="catrows"></tbody>
+  </table></div>
+  <h3>What the board covers</h3>
+  <p id="coverage"></p>
+  <h3>Reading the board</h3>
+  <ul>
+    <li>Rank 1 is the highest implied value. Values fall as rank rises.</li>
+    <li>The <span class="badge wl">WATCHLIST</span> badge marks the snapshot's own watchlist: at least $50M of TVL and no token on record.</li>
+    <li>The <span class="badge dep">DEPLOYMENT</span> badge marks one versioned deployment (a V2 or V3) of a pre-token protocol, discounted to 70% — a slice of a protocol, not the whole of it.</li>
+    <li>Rows below the floor are the early radar — smaller pre-token protocols the watchlist leaves out.</li>
+    <li>Exchanges stay off the board, and so do wrapped, staked and bridged products of tokens that already trade at or above the floor: ranking one of those first would be ranking Bitcoin or ETH, not a launch.</li>
+    <li>Relative momentum is a percentile: a protocol's week ranked against its own category, so one outlier's wild week cannot stretch its neighbours' scores.</li>
+    <li>Farm plans are eight concrete steps with a cost and a time, plus an effort rating and an estimated cost per row. Never pay a fee to claim anything.</li>
+  </ul>
+</section>
+
+<aside id="drawer" class="drawer" hidden aria-label="Protocol detail">
+  <button id="close" class="close" aria-label="Close detail">×</button>
+  <div id="detail"></div>
+</aside>
+<div id="scrim" class="scrim" hidden></div>
+
+<footer>
+  <p id="src"></p>
+  <p>Snapshot as of <span id="asof"></span> · Data: DefiLlama public API, fetched once and sealed · This page works with no network.</p>
+</footer>
+
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
